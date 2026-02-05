@@ -290,6 +290,59 @@ Get recent alert records for analytics.
 - Gzip compression on all responses
 - Database query indexing
 
+## 📱 Responsive UI - Mobile, Tablet, Desktop
+
+The PRALAYA-NET dashboard is **fully responsive** and works seamlessly across all device sizes:
+
+### Responsive Breakpoints
+
+- **Mobile (320px-639px)**: Single-column layout, hamburger menu, full-screen modals
+- **Tablet (768px-1023px)**: Two-column layout (sidebar + main), toggle for right panel
+- **Desktop (1024px+)**: Three-column layout (left + center + right panels)
+
+### Mobile Features
+
+✅ **Hamburger Menu**: Toggle control panel and intelligence feed
+✅ **Adaptive Layout**: Automatically adjusts from 1→2→3 columns
+✅ **Touch-Friendly**: 44px+ touch targets, optimized buttons
+✅ **Auto-Hiding Elements**: Header subtitle/timestamp hide on mobile
+✅ **Full-Screen Modals**: Side panels display as overlays on mobile
+✅ **Smart Overlay**: Click overlay or resize to close mobile panels
+
+### Testing Responsive UI
+
+```bash
+# Desktop Testing
+npm run dev  # Navigate to http://localhost:5173
+
+# Mobile Testing with Chrome DevTools
+1. Open DevTools (F12)
+2. Click Device Toolbar icon (Ctrl+Shift+M / Cmd+Shift+M)
+3. Select device: iPhone SE, Galaxy S21, iPad, etc.
+4. Test interactions: menu toggle, scroll, click overlay
+
+# Real Device Testing
+npm run build
+# Deploy to staging and test on physical phone/tablet
+```
+
+### Known Responsive Features
+
+- **Grid Layout**: `1fr` (mobile) → `280px 1fr` (tablet) → `320px 1fr 380px` (desktop)
+- **Header Sizing**: 18px title (mobile) → 20px (tablet+)
+- **Panel Toggle**: `mobileMenuOpen` and `mobileRightPanelOpen` React state
+- **Auto-Close**: Mobile panels close when window resizes to tablet size
+
+**For detailed testing checklist, see [RESPONSIVE_TESTING.md](./RESPONSIVE_TESTING.md)**
+
+### Browser Support
+
+✅ Chrome 90+
+✅ Firefox 88+
+✅ Safari 14+
+✅ Edge 90+
+✅ Mobile browsers (iOS Safari, Chrome Mobile)
+
 ## 🛠️ Development
 
 ### Project Structure
