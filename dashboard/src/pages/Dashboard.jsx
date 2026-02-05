@@ -3,7 +3,7 @@ import MapView from "../components/MapView";
 import ControlPanel from "../components/ControlPanel";
 import StatusPanel from "../components/StatusPanel";
 import IntelligenceFeed from "../components/IntelligenceFeed";
-import { checkBackendHealth } from "../services/api";
+import { checkBackendHealth, API_BASE, connectWebSocket } from "../services/api";
 import "../index.css";
 
 const Dashboard = () => {
@@ -32,7 +32,7 @@ const Dashboard = () => {
       try {
         const isHealthy = await checkBackendHealth();
         setBackendOnline(isHealthy);
-        
+
         if (!isHealthy) {
           setConnectionError("Backend offline - waiting for connection...");
           console.error("[Dashboard] Backend is not responding");
@@ -48,30 +48,53 @@ const Dashboard = () => {
     };
 
     initBackend();
-    
+
     // Check backend health every 30 seconds
     const healthCheckInterval = setInterval(initBackend, 30000);
     return () => clearInterval(healthCheckInterval);
   }, []);
 
-  useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        const response = await fetch("http://127.0.0.1:8000/api/trigger/status");
-        const data = await response.json();
-        setSystemStatus(data);
-        setBackendOnline(true);
-        setConnectionError(null);
-      } catch (error) {
-        console.error("[Dashboard] Error fetching system status:", error.message);
-        setBackendOnline(false);
-        setConnectionError("Failed to fetch system status - backend unreachable");
-      }
-    };
+  const [predictions, setPredictions] = useState(null);
 
+  // Initialize WebSockets
+  useEffect(() => {
+    const socket = connectWebSocket((payload) => {
+      console.log("[WS] Received Event:", payload);
+      if (payload.type === "DISASTER_DETECTED") {
+        setConnectionError(null);
+        // Refresh status when a new disaster is detected
+        fetchStatus();
+      }
+      if (payload.type === "PREDICTION_UPDATE") {
+        setPredictions(payload.data);
+      }
+    });
+
+    return () => socket.close();
+  }, []);
+
+  // Fetch initial status
+  const fetchStatus = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/trigger/status`);
+      const data = await response.json();
+      setSystemStatus(data);
+      if (data.cascading_analysis?.next_failure_prediction) {
+        setPredictions(data.cascading_analysis.next_failure_prediction);
+      }
+      setBackendOnline(true);
+      setConnectionError(null);
+    } catch (error) {
+      console.error("[Dashboard] Error fetching system status:", error.message);
+      setBackendOnline(false);
+      setConnectionError("Failed to fetch system status - backend unreachable");
+    }
+  };
+
+  useEffect(() => {
     if (backendOnline) {
       fetchStatus();
-      const interval = setInterval(fetchStatus, 5000);
+      const interval = setInterval(fetchStatus, 10000); // Polling as backup every 10s
       return () => clearInterval(interval);
     }
   }, [backendOnline]);
@@ -99,15 +122,15 @@ const Dashboard = () => {
           <h1 className="system-title">PRALAYA-NET</h1>
           <span className="system-subtitle">Unified Disaster Command System</span>
         </div>
-        
+
         <div className="header-right">
           {/* Backend Status Indicator */}
           <div className="mode-indicator">
             <span style={{ marginRight: "15px", display: "flex", alignItems: "center", gap: "5px", fontSize: "inherit" }}>
-              <span style={{ 
-                width: "10px", 
-                height: "10px", 
-                borderRadius: "50%", 
+              <span style={{
+                width: "10px",
+                height: "10px",
+                borderRadius: "50%",
                 backgroundColor: backendOnline ? "#00ff00" : "#ff4444",
                 display: "inline-block"
               }}></span>

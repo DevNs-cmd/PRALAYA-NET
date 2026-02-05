@@ -19,10 +19,10 @@ const IntelligenceFeed = ({ systemStatus }) => {
             return { drones: [] };
           })
         ]);
-        
+
         if (statusData) {
           setStatus(statusData);
-          
+
           // Fetch latest decision for alerts
           if (statusData.active_disasters && statusData.active_disasters.length > 0) {
             // Alerts would come from the decision engine
@@ -39,7 +39,7 @@ const IntelligenceFeed = ({ systemStatus }) => {
             setAlerts([]);
           }
         }
-        
+
         if (droneData) {
           setDrones(droneData.drones || []);
         }
@@ -60,9 +60,40 @@ const IntelligenceFeed = ({ systemStatus }) => {
   };
 
   const cascadingAnalysis = status?.cascading_analysis;
+  const nextFailure = cascadingAnalysis?.next_failure_prediction;
 
   return (
     <>
+      {/* Predictive Failure Insight */}
+      <div className="panel-section prediction-highlight">
+        <div className="section-header">
+          <span className="section-title">Failure Intelligence</span>
+          <span className="section-badge red">LIVE AI</span>
+        </div>
+        {nextFailure ? (
+          <div className="prediction-card">
+            <div className="prediction-label">Next Likely Component Failure:</div>
+            <div className="prediction-target">{nextFailure.name}</div>
+            <div className="prediction-metrics">
+              <div className="prediction-metric">
+                <span className="label">Probability</span>
+                <span className="value">{(nextFailure.probability * 100).toFixed(0)}%</span>
+              </div>
+              <div className="prediction-metric">
+                <span className="label">Est. Time</span>
+                <span className="value">{nextFailure.estimated_time_min}m</span>
+              </div>
+            </div>
+            <div className="prediction-status">
+              <div className="status-dot pulsing"></div>
+              <span>PREDICTIVE ENGINE MONITORING</span>
+            </div>
+          </div>
+        ) : (
+          <div className="empty-state">No current failure predictions</div>
+        )}
+      </div>
+
       {/* Cascading Risk Analysis */}
       <div className="panel-section">
         <div className="section-header">
@@ -100,7 +131,7 @@ const IntelligenceFeed = ({ systemStatus }) => {
                   )}
                 </div>
               ))}
-            
+
             {cascadingAnalysis.cascade_timeline && cascadingAnalysis.cascade_timeline.length > 0 && (
               <div className="timeline mt-8">
                 <div className="section-title mb-8">Propagation Timeline</div>
@@ -223,6 +254,20 @@ const DroneCard = ({ drone }) => {
             <div className="telemetry-item">
               <span className="telemetry-label">Signal</span>
               <span className="telemetry-value">{telemetry.signal_strength?.toFixed(0)}%</span>
+            </div>
+          </div>
+          <div className="drone-visual-feed">
+            <div className="feed-header">
+              <span className="feed-label">V-SLAM Visual Field</span>
+              <span className="feed-meta">ORB Keypoints: {telemetry.slam_points || 0}</span>
+            </div>
+            <div className="feed-canvas">
+              {/* In a real production environment, this would be an <img src="/api/drone/stream" /> */}
+              <div className="feed-overlay">
+                <div className="corner tl"></div><div className="corner tr"></div>
+                <div className="corner bl"></div><div className="corner br"></div>
+                <div className="tracking-stats">REC ● LIVE</div>
+              </div>
             </div>
           </div>
           {getSlamReasoning() && (

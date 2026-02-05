@@ -178,6 +178,9 @@ class CascadingRiskAnalyzer:
         # Calculate cascade timeline
         cascade_timeline = self._calculate_cascade_timeline(affected_nodes)
         
+        # Predict NEXT likely failure
+        next_prediction = self._predict_next_failure(affected_nodes)
+        
         return {
             "graph": {
                 "nodes": nodes_data,
@@ -187,9 +190,29 @@ class CascadingRiskAnalyzer:
             "propagation_path": propagation_path,
             "critical_nodes": critical_nodes,
             "cascade_timeline": cascade_timeline,
+            "next_failure_prediction": next_prediction,
             "max_risk": max([n["risk"] for n in nodes_data], default=0.0),
             "analyzed_at": datetime.now().isoformat()
         }
+
+    def _predict_next_failure(self, affected_nodes: Dict) -> Optional[Dict]:
+        """Predict the next component likely to fail and its probability"""
+        potential_next = []
+        
+        for node_id, state in affected_nodes.items():
+            if state["risk"] < HIGH_RISK:
+                # This is a candidate for full failure soon
+                probability = state["risk"] * 1.2 # Heuristic boost
+                potential_next.append({
+                    "node_id": node_id,
+                    "name": self.graph.nodes[node_id].get("name"),
+                    "probability": round(min(probability, 0.99), 2),
+                    "estimated_time_min": state["time_minutes"]
+                })
+        
+        if not potential_next: return None
+        # Return the one with highest probability that hasn't failed yet
+        return max(potential_next, key=lambda x: x["probability"])
     
     def _find_nearest_node(self, location: Dict) -> Optional[str]:
         """Find the nearest infrastructure node to a location"""

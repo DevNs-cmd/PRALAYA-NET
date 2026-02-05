@@ -14,43 +14,42 @@ class VisualSLAMDemo:
     Simulates feature detection and mapping for GPS-denied navigation
     """
     
-    def __init__(self, config_path="config.json"):
+    def __init__(self, config_path="config.json", source=None):
+        self._config_path = config_path
         self.config = self._load_config(config_path)
         self.cap = None
         self.slam_enabled = False
         self.map_points = []
         self.keyframes = []
-        
+        self.source = source or self.config.get("simulation", {}).get("video_source", 0)
+
     def _load_config(self, config_path):
         """Load configuration from JSON file"""
         try:
             with open(config_path, 'r') as f:
                 return json.load(f)
-        except FileNotFoundError:
-            print(f"Config file {config_path} not found, using defaults")
+        except Exception:
             return {
                 "drone": {"max_altitude": 120},
-                "simulation": {"update_interval_ms": 2000}
+                "simulation": {"update_interval_ms": 2000, "video_source": 0}
             }
-    
-    def initialize_camera(self, source=0):
-        """
-        Initialize camera or video source
+
+    def initialize_camera(self, source=None):
+        """Initialize camera or video source with robust fallback"""
+        src = source if source is not None else self.source
+        print(f"📡 INITIALIZING VIDEO SOURCE: {src}")
         
-        Args:
-            source: Camera index (0 for default) or video file path
-        """
-        if isinstance(source, str) and Path(source).exists():
-            self.cap = cv2.VideoCapture(source)
-        else:
-            self.cap = cv2.VideoCapture(source)
+        self.cap = cv2.VideoCapture(src)
         
         if not self.cap.isOpened():
-            print("Error: Could not open camera/video source")
-            return False
-        
-        print("Camera initialized successfully")
-        return True
+            # Try video file fallback if webcam fails
+            fallback_video = Path("data/simulated/drone_recon.mp4")
+            if src == 0 and fallback_video.exists():
+                print(f"⚠️ Webcam failed. Using fallback video: {fallback_video}")
+                self.cap = cv2.VideoCapture(str(fallback_video))
+            else:
+                return False
+        return self.cap.isOpened()
     
     def enable_slam(self):
         """Enable Visual SLAM"""
@@ -131,73 +130,82 @@ class VisualSLAMDemo:
         return frame_with_features
     
     def run_demo(self):
-        """Run the SLAM demo"""
-        print("Starting Visual SLAM Demo")
-        print("Press 's' to enable/disable SLAM")
-        print("Press 'q' to quit")
+        """Run the SLAM demo with robust camera/synthetic fallback"""
+        print("\n" + "═"*50)
+        print("🚁 DRONE MODULE READY: PRALAYA-NET V-SLAM")
+        print("═"*50)
+        print("Controls: Press 's' to toggle SLAM, 'q' to exit")
         
+        # Check for camera
         if not self.initialize_camera():
-            print("Failed to initialize camera. Using simulated mode...")
-            # Simulate with a test pattern
-            self._simulate_slam()
+            print("⚠️  WEBCAM NOT DETECTED! Entering SYNTHETIC IMAGE MODE.")
+            self._run_synthetic_demo()
             return
         
-        slam_enabled = False
-        
+        self._run_main_loop()
+
+    def _run_main_loop(self):
+        """Main camera loop"""
         while True:
             ret, frame = self.cap.read()
-            
             if not ret:
-                print("End of video or camera error")
                 break
             
-            # Process frame
-            if slam_enabled:
-                frame = self.process_frame(frame)
-            else:
-                cv2.putText(
-                    frame,
-                    "V-SLAM: INACTIVE (Press 's' to enable)",
-                    (10, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.7,
-                    (0, 0, 255),
-                    2
-                )
-            
-            # Display frame
+            frame = self.process_frame(frame) if self.slam_enabled else self._draw_inactive_overlay(frame)
             cv2.imshow("PRALAYA-NET V-SLAM Demo", frame)
             
-            # Handle key presses
-            key = cv2.waitKey(1) & 0xFF
-            if key == ord('q'):
+            if not self._handle_keys():
                 break
-            elif key == ord('s'):
-                slam_enabled = not slam_enabled
-                if slam_enabled:
-                    self.enable_slam()
-                else:
-                    self.disable_slam()
         
         self.cap.release()
         cv2.destroyAllWindows()
-        print(f"Demo ended. Total map points: {len(self.map_points)}")
-    
-    def _simulate_slam(self):
-        """Simulate SLAM without camera"""
-        print("Running simulated SLAM mode...")
+
+    def _run_synthetic_demo(self):
+        """Generates a moving synthetic pattern if NO camera is available"""
         self.enable_slam()
+        width, height = 640, 480
+        t = 0
         
-        # Simulate feature detection
-        for i in range(10):
-            self.map_points.append({
-                "keypoints": np.random.randint(50, 200),
-                "timestamp": i * 1000
-            })
-            print(f"Frame {i+1}: Detected {self.map_points[-1]['keypoints']} features")
-        
-        print(f"Simulation complete. Total map points: {len(self.map_points)}")
+        while True:
+            # Create a synthetic "disaster zone" pattern
+            frame = np.zeros((height, width, 3), dtype=np.uint8)
+            # Add some moving "features" (geometric shapes)
+            for i in range(15):
+                pos = (
+                    int(width/2 + 200 * np.sin(t + i)),
+                    int(height/2 + 150 * np.cos(t * 0.5 + i))
+                )
+                cv2.circle(frame, pos, 20, (50, 50, 150 + i*5), -1)
+                cv2.rectangle(frame, (pos[0]-10, pos[1]-10), (pos[0]+10, pos[1]+10), (0, 255, 0), 1)
+
+            t += 0.05
+            frame = self.process_frame(frame)
+            
+            cv2.putText(frame, "SYNTHETIC DRONE FEED (DEMO)", (10, height - 20), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            
+            cv2.imshow("PRALAYA-NET V-SLAM Demo (SYNTHETIC)", frame)
+            if not self._handle_keys():
+                break
+        cv2.destroyAllWindows()
+
+    def _draw_inactive_overlay(self, frame):
+        cv2.putText(frame, "V-SLAM: INACTIVE (Press 's' to enable)", (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        return frame
+
+    def _handle_keys(self):
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'): return False
+        if key == ord('s'):
+            self.slam_enabled = not self.slam_enabled
+            if self.slam_enabled: self.enable_slam()
+            else: self.disable_slam()
+        return True
 
 if __name__ == "__main__":
-    demo = VisualSLAMDemo()
-    demo.run_demo()
+    try:
+        demo = VisualSLAMDemo()
+        demo.run_demo()
+    except Exception as e:
+        print(f"CRITICAL ERROR in SLAM module: {e}")

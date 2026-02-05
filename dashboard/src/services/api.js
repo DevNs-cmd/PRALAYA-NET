@@ -22,8 +22,37 @@ const getBackendUrl = () => {
   return defaultUrl;
 };
 
-const API_BASE = getBackendUrl();
-console.log("[API] Backend base URL configured as:", API_BASE);
+export const API_BASE = getBackendUrl();
+export const WS_URL = API_BASE.replace(/^http/, "ws") + "/ws";
+console.log("[API] Backend base URL:", API_BASE);
+console.log("[API] WebSocket URL:", WS_URL);
+
+/**
+ * Initialize WebSocket connection with auto-reconnect logic
+ */
+export function connectWebSocket(onMessage, retryCount = 0) {
+  const socket = new WebSocket(WS_URL);
+
+  socket.onopen = () => {
+    console.log("[WS] ✅ Connected to Real-time Stream");
+  };
+
+  socket.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      onMessage(data);
+    } catch (err) {
+      console.error("[WS] ❌ Error parsing socket message:", err);
+    }
+  };
+
+  socket.onclose = () => {
+    console.warn("[WS] ❌ Connection died. Retrying in 5s...");
+    setTimeout(() => connectWebSocket(onMessage, retryCount + 1), 5000);
+  };
+
+  return socket;
+}
 
 // Backend health status cache
 let backendHealthy = null;
@@ -36,7 +65,7 @@ const HEALTH_CHECK_INTERVAL = 30000; // Check every 30 seconds
  */
 export async function checkBackendHealth() {
   const now = Date.now();
-  
+
   // Return cached result if recent
   if (lastHealthCheck && now - lastHealthCheck < HEALTH_CHECK_INTERVAL && backendHealthy !== null) {
     return backendHealthy;
@@ -52,13 +81,13 @@ export async function checkBackendHealth() {
 
     backendHealthy = response.ok;
     lastHealthCheck = now;
-    
+
     if (backendHealthy) {
       console.log("[API] ✅ Backend is healthy");
     } else {
       console.error("[API] ❌ Backend health check failed:", response.status);
     }
-    
+
     return backendHealthy;
   } catch (error) {
     console.error("[API] ❌ Backend unreachable:", error.message);
@@ -68,39 +97,44 @@ export async function checkBackendHealth() {
   }
 }
 
-// Helper function for API calls with error handling
-async function apiCall(url, options = {}) {
-  try {
-    console.log(`[API] Calling ${options.method || "GET"} ${url}`);
-    
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-    });
+// Helper function for API calls with error handling and retries
+async function apiCall(url, options = {}, retries = 3) {
+  let lastError;
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: response.statusText }));
-      console.error(`[API] Error response: ${response.status}`, errorData);
-      throw new Error(errorData.error || errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
-    }
+  for (let i = 0; i < retries; i++) {
+    try {
+      if (i > 0) console.log(`[API] Retry attempt ${i}/${retries} for ${url}`);
 
-    const data = await response.json();
-    console.log(`[API] ✅ Success: ${url}`);
-    return data;
-  } catch (error) {
-    console.error(`[API] ❌ Request failed:`, error.message);
-    
-    if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError") || error.message.includes("ERR_")) {
-      const backendUrl = API_BASE;
-      const message = `Backend connection failed. Ensure backend is running at ${backendUrl}`;
-      console.error(`[API] ${message}`);
-      throw new Error(message);
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...options.headers,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: response.statusText }));
+        throw new Error(errorData.error || errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      if (i > 0) console.log(`[API] ✅ Connected on attempt ${i + 1}`);
+      return data;
+    } catch (error) {
+      lastError = error;
+      console.warn(`[API] ⚠️ Attempt ${i + 1} failed: ${error.message}`);
+
+      // Don't wait on the last attempt
+      if (i < retries - 1) {
+        const backoff = Math.pow(2, i) * 1000;
+        await new Promise(resolve => setTimeout(resolve, backoff));
+      }
     }
-    throw error;
   }
+
+  console.error(`[API] ❌ All ${retries} attempts failed for: ${url}`);
+  throw lastError;
 }
 
 // Trigger disaster

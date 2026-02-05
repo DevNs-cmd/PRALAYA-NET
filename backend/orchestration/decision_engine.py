@@ -17,6 +17,9 @@ from drone.drone_controller import drone_controller
 # Import satellite_zones (shared list)
 from api.satellite_api import satellite_zones
 
+import asyncio
+from services.ws_manager import ws_manager
+
 class DecisionEngine:
     """
     Master decision engine that:
@@ -98,6 +101,12 @@ class DecisionEngine:
             "current_severity": severity,
             "trend": "stable"
         }
+        
+        # BROADCAST to Dashboard via WebSockets
+        asyncio.create_task(ws_manager.broadcast({
+            "type": "DISASTER_DETECTED",
+            "data": decision
+        }))
         
         return decision
     

@@ -6,7 +6,14 @@ VERSION = "0.1.0"
 # Server Configuration
 HOST = "0.0.0.0"
 PORT = 8000
-CORS_ORIGINS = ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"]
+CORS_ORIGINS = [
+    "http://localhost:5173", 
+    "http://localhost:3000", 
+    "http://127.0.0.1:5173",
+    "http://0.0.0.0:5173",
+    "https://pralaya-net.vercel.app",
+    "*" # Fallback for production
+]
 
 # Risk Thresholds
 LOW_RISK = 0.3
@@ -43,3 +50,12 @@ DRONE_MAX_ALTITUDE = 120  # meters
 DATA_RAW_PATH = "data/raw"
 DATA_PROCESSED_PATH = "data/processed"
 DATA_SIMULATED_PATH = "data/simulated"
+
+# Real-time Data Sources
+NASA_FIRMS_URL = "https://firms.modaps.eosdis.nasa.gov/api/area/csv"
+USGS_EARTHQUAKE_URL = "https://earthquake.usgs.gov/fdsnws/event/1/query"
+OPENWEATHER_ALERTS_URL = "https://api.openweathermap.org/data/2.5/onecall"
+
+# Ingestion Settings
+INGESTION_INTERVAL_SEC = 300  # 5 minutes
+CACHE_TTL_SEC = 3600  # 1 hour
