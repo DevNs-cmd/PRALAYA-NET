@@ -1,31 +1,38 @@
-// dashboard/src/services/api.js
-
 // Backend URL configuration - supports both development and production
 const getBackendUrl = () => {
-  // Try environment variable first
-  const envUrl = import.meta.env.VITE_API_URL;
-  if (envUrl) {
-    console.log("[API] Using VITE_API_URL:", envUrl);
-    return envUrl;
-  }
+  // Vite env vars
+  const viteUrl = import.meta.env.VITE_API_URL;
+  if (viteUrl) return viteUrl;
 
-  // Try React App variable (for compatibility)
-  const reactEnvUrl = window.REACT_APP_API_URL;
-  if (reactEnvUrl) {
-    console.log("[API] Using REACT_APP_API_URL:", reactEnvUrl);
-    return reactEnvUrl;
-  }
+  // CRA-style env vars (if passed through Vite)
+  const reactAppUrl = import.meta.env.VITE_REACT_APP_API_URL || import.meta.env.REACT_APP_API_URL;
+  if (reactAppUrl) return reactAppUrl;
 
-  // Default to localhost for development
-  const defaultUrl = "http://127.0.0.1:8000";
-  console.log("[API] Using default backend URL:", defaultUrl);
-  return defaultUrl;
+  // Window fallbacks
+  const windowUrl = window.REACT_APP_API_URL || window.VITE_API_URL;
+  if (windowUrl) return windowUrl;
+
+  return "http://127.0.0.1:8000";
 };
 
 export const API_BASE = getBackendUrl();
-export const WS_URL = API_BASE.replace(/^http/, "ws") + "/ws";
-console.log("[API] Backend base URL:", API_BASE);
-console.log("[API] WebSocket URL:", WS_URL);
+
+// WebSocket URL configuration
+const getWsUrl = () => {
+  const viteWsUrl = import.meta.env.VITE_WS_URL || import.meta.env.VITE_REACT_APP_WS_URL;
+  if (viteWsUrl) return viteWsUrl;
+
+  const reactWsUrl = import.meta.env.REACT_APP_WS_URL;
+  if (reactWsUrl) return reactWsUrl;
+
+  // Logic fallback: Derive from API_BASE
+  return API_BASE.replace(/^http/, "ws") + "/ws";
+};
+
+export const WS_URL = getWsUrl();
+
+console.log("[API] Production Base URL:", API_BASE);
+console.log("[API] Production WebSocket URL:", WS_URL);
 
 /**
  * Initialize WebSocket connection with auto-reconnect logic
