@@ -40,6 +40,7 @@ class TelemetryGenerator:
                 "signal_strength": random.uniform(70, 100),
                 "gps_status": "active",
                 "slam_status": "inactive",
+                "slam_points": 0,
                 "camera_status": "active",
                 "timestamp": datetime.now().isoformat()
             }

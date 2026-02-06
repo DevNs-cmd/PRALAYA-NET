@@ -113,7 +113,7 @@ const Dashboard = () => {
           zIndex: 1000,
           fontSize: "12px"
         }}>
-          🔴 BACKEND OFFLINE: {connectionError || "Unable to connect to backend server at http://127.0.0.1:8000"}
+          🔴 BACKEND OFFLINE: {connectionError || `Unable to connect to backend at ${API_BASE}`}
         </div>
       )}
 

@@ -70,27 +70,18 @@ const HEALTH_CHECK_INTERVAL = 30000; // Check every 30 seconds
  * Check if backend is healthy
  * @returns {Promise<boolean>}
  */
+// Check if backend is healthy (no cache to ensure immediate updates)
 export async function checkBackendHealth() {
-  const now = Date.now();
-
-  // Return cached result if recent
-  if (lastHealthCheck && now - lastHealthCheck < HEALTH_CHECK_INTERVAL && backendHealthy !== null) {
-    return backendHealthy;
-  }
-
   try {
-    console.log("[API] Checking backend health...");
     const response = await fetch(`${API_BASE}/api/health`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
-      timeout: 5000,
     });
 
     backendHealthy = response.ok;
-    lastHealthCheck = now;
 
     if (backendHealthy) {
-      console.log("[API] ✅ Backend is healthy");
+      // Silent success
     } else {
       console.error("[API] ❌ Backend health check failed:", response.status);
     }
@@ -99,7 +90,6 @@ export async function checkBackendHealth() {
   } catch (error) {
     console.error("[API] ❌ Backend unreachable:", error.message);
     backendHealthy = false;
-    lastHealthCheck = now;
     return false;
   }
 }

@@ -39,7 +39,7 @@ app = FastAPI(
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(InputValidationMiddleware)
-app.add_middleware(RateLimitMiddleware, requests_per_minute=100)
+app.add_middleware(RateLimitMiddleware, requests_per_minute=30000)
 
 # CORS Middleware
 app.add_middleware(
@@ -75,6 +75,14 @@ async def startup_event():
     print("✅ HARDWARE LOOP READY")
     print("✅ DRONE MODULE READY")
     print("✅ GNN DIGITAL TWIN LOADED")
+
+    # Initialize Demo Drone for SLAM
+    try:
+        from drone.drone_controller import drone_controller
+        drone_controller.deploy_drone({"lat": 28.6139, "lon": 77.2090})
+        print("✅ RECON DRONE [drone_1]: DEPLOYED AT COMMAND CENTER")
+    except Exception as e:
+        print(f"⚠️ Drone initialization failed: {e}")
     print("\n✨ BACKEND READY: PRALAYA-NET OPERATIONAL")
     print("═"*70 + "\n")
 

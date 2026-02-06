@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { getSystemStatus, getDroneStatus, getDroneTelemetry } from "../services/api";
+import { getSystemStatus, getDroneStatus, getDroneTelemetry, API_BASE } from "../services/api";
+import DroneGrid from "./DroneGrid";
 
 const IntelligenceFeed = ({ systemStatus }) => {
   const [status, setStatus] = useState(systemStatus);
@@ -178,16 +179,10 @@ const IntelligenceFeed = ({ systemStatus }) => {
       {/* Drone Fleet */}
       <div className="panel-section">
         <div className="section-header">
-          <span className="section-title">Drone Fleet</span>
-          <span className="section-badge">{drones.length}</span>
+          <span className="section-title">Tactical Swarm</span>
+          <span className="section-badge">{drones.length}/12</span>
         </div>
-        {drones.length === 0 ? (
-          <div className="empty-state">No drones deployed</div>
-        ) : (
-          drones.map((drone) => (
-            <DroneCard key={drone.id} drone={drone} />
-          ))
-        )}
+        <DroneGrid drones={drones} />
       </div>
     </>
   );
@@ -262,11 +257,27 @@ const DroneCard = ({ drone }) => {
               <span className="feed-meta">ORB Keypoints: {telemetry.slam_points || 0}</span>
             </div>
             <div className="feed-canvas">
-              {/* In a real production environment, this would be an <img src="/api/drone/stream" /> */}
+              {/* Live V-SLAM Visual Stream */}
+              <img
+                src={`${API_BASE}/api/drones/slam/${drone.id}/stream`}
+                alt="Tactical V-SLAM Feed"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  display: 'block'
+                }}
+                onError={(e) => {
+                  e.target.style.opacity = '0';
+                }}
+                onLoad={(e) => {
+                  e.target.style.opacity = '1';
+                }}
+              />
               <div className="feed-overlay">
                 <div className="corner tl"></div><div className="corner tr"></div>
                 <div className="corner bl"></div><div className="corner br"></div>
-                <div className="tracking-stats">REC ● LIVE</div>
+                <div className="tracking-stats">REC ● {drone.slam_enabled ? 'SLAM_LOCKED' : 'GPS_ACTIVE'}</div>
               </div>
             </div>
           </div>

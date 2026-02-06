@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { triggerDisaster, clearDisasters } from "../services/api";
+import TacticalSwarmControl from "./TacticalSwarmControl";
 
 const ControlPanel = () => {
   const [loading, setLoading] = useState(false);
@@ -45,6 +46,9 @@ const ControlPanel = () => {
 
   return (
     <div className="panel-section">
+      {/* Tactical Swarm Control */}
+      <TacticalSwarmControl />
+
       <div className="section-header">
         <span className="section-title">Disaster Scenario Control</span>
       </div>
