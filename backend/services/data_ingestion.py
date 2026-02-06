@@ -19,18 +19,18 @@ class LiveDataIngestor:
     async def start_monitoring(self):
         """Starts the infinite monitoring loop"""
         self.active_workers = True
-        print("🌍 LIVE DATA INGESTOR: INITIALIZED")
+        print("[INIT] LIVE DATA INGESTOR: INITIALIZED")
         
         while self.active_workers:
             try:
-                print(f"🔄 [{datetime.now().strftime('%H:%M:%S')}] Polling global disaster APIs...")
+                print(f"[POLL] [{datetime.now().strftime('%H:%M:%S')}] Polling global disaster APIs...")
                 await asyncio.gather(
                     self.fetch_usgs_earthquakes(),
                     self.fetch_nasa_firms(),
                     self.fetch_weather_alerts()
                 )
             except Exception as e:
-                print(f"⚠️ Ingestion error: {e}")
+                print(f"[WARN] Ingestion error: {e}")
             
             await asyncio.sleep(INGESTION_INTERVAL_SEC)
 
@@ -52,7 +52,7 @@ class LiveDataIngestor:
                         # Inject into decision engine if not processed
                         event_id = feature["id"]
                         if event_id not in self.last_fetch:
-                            print(f"📢 USGS DETECTED: Mag {props['mag']} Earthquake at {props['place']}")
+                            print(f"[USGS] Earthquake detected: Mag {props['mag']} at {props['place']}")
                             decision_engine.process_disaster(
                                 disaster_type="earthquake",
                                 severity=min(props['mag'] / 10.0, 1.0),
@@ -61,7 +61,7 @@ class LiveDataIngestor:
                             )
                             self.last_fetch[event_id] = True
             except Exception as e:
-                print(f"❌ USGS Fetch Failed: {e}")
+                print(f"[ERROR] USGS Fetch Failed: {e}")
 
     async def fetch_nasa_firms(self):
         """Fetch wildfire data from NASA FIRMS"""
@@ -87,7 +87,7 @@ class LiveDataIngestor:
                             
                             event_id = f"fire_{lat}_{lon}_{data['acq_date']}"
                             if event_id not in self.last_fetch:
-                                print(f"🔥 NASA FIRMS DETECTED: Fire at {lat}, {lon} (Brightness: {bright})")
+                                print(f"[FIRE] NASA FIRMS detected: Active fire at {lat}, {lon} (Brightness: {bright})")
                                 decision_engine.process_disaster(
                                     disaster_type="fire",
                                     severity=min(bright / 400.0, 1.0),
@@ -96,7 +96,7 @@ class LiveDataIngestor:
                                 )
                                 self.last_fetch[event_id] = True
             except Exception as e:
-                print(f"❌ NASA FIRMS Fetch Failed: {e}")
+                print(f"[ERROR] NASA FIRMS Fetch Failed: {e}")
 
     async def fetch_weather_alerts(self):
         """Fetch extreme weather from OpenWeather"""
@@ -133,7 +133,7 @@ class LiveDataIngestor:
                     if alert_type:
                         event_id = f"weather_{alert_type}_{lat}_{lon}_{datetime.now().strftime('%Y%m%d%H')}"
                         if event_id not in self.last_fetch:
-                            print(f"🌦️ WEATHER ALERT: {alert_type.upper()} detected at {data['name']}")
+                            print(f"[WEATHER] Alert: {alert_type.upper()} detected at {data['name']}")
                             decision_engine.process_disaster(
                                 disaster_type=alert_type,
                                 severity=severity,
@@ -142,7 +142,7 @@ class LiveDataIngestor:
                             )
                             self.last_fetch[event_id] = True
             except Exception as e:
-                print(f"❌ Weather Fetch Failed: {e}")
+                print(f"[ERROR] Weather Fetch Failed: {e}")
 
 # Global instance
 data_ingestor = LiveDataIngestor()

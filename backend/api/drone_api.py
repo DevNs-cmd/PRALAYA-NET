@@ -2,7 +2,7 @@
 Drone API - Control and monitor drones
 """
 
-from fastapi import APIRouter, HTTPException, File, UploadFile
+from fastapi import APIRouter, HTTPException, File, UploadFile, Request
 from fastapi.responses import StreamingResponse, Response
 from typing import List, Dict, Optional
 from drone.drone_controller import drone_controller
@@ -96,19 +96,42 @@ tactical_swarm_enabled = False
 shared_broadcast_frame = None
 
 @router.post("/slam/{drone_id}/frame")
-async def upload_slam_frame(drone_id: str, file: bytes = File(...)):
+async def upload_slam_frame(drone_id: str, request: Request):
     """
     Upload a live frame from the drone vision module
-    Supports tactical swarm mode where frames are broadcast to all drones
+    Accepts multipart/form-data with 'file' field containing JPEG bytes
     """
     global shared_broadcast_frame
-    drone_frames[drone_id] = file
-    
-    # In tactical swarm mode, all drones share the broadcast frame
-    if tactical_swarm_enabled:
-        shared_broadcast_frame = file
-    
-    return {"status": "ok", "tactical_swarm": tactical_swarm_enabled}
+    try:
+        # Parse multipart form data
+        form = await request.form()
+        file = form.get("file")
+        
+        if not file:
+            raise HTTPException(status_code=400, detail="Missing 'file' field in form data")
+        
+        # Read the file content
+        content = await file.read()
+        
+        if not content:
+            raise HTTPException(status_code=400, detail="Empty file")
+        
+        # Store frame
+        drone_frames[drone_id] = content
+        
+        # In tactical swarm mode, all drones share the broadcast frame
+        if tactical_swarm_enabled:
+            shared_broadcast_frame = content
+        
+        # Log frame storage for debugging
+        print(f"[Frame] Stored for {drone_id}: {len(content)} bytes")
+        
+        return {"status": "ok", "tactical_swarm": tactical_swarm_enabled}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[Frame] ERROR storing frame for {drone_id}: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Frame upload failed: {str(e)}")
 
 @router.get("/slam/{drone_id}/live")
 async def get_slam_frame(drone_id: str):
@@ -135,6 +158,7 @@ async def stream_slam_vision(drone_id: str):
     In tactical swarm mode, all drones receive the shared broadcast frame
     """
     async def frame_generator():
+        frame_sent = 0
         while True:
             global shared_broadcast_frame
             
@@ -145,6 +169,9 @@ async def stream_slam_vision(drone_id: str):
                 frame_data = drone_frames[drone_id]
             
             if frame_data:
+                frame_sent += 1
+                if frame_sent % 30 == 0:  # Log every 30 frames
+                    print(f"[Stream] {drone_id}: sent frame #{frame_sent}")
                 yield (b'--frame\r\n'
                        b'Content-Type: image/jpeg\r\n\r\n' + frame_data + b'\r\n')
             await asyncio.sleep(0.1)  # 10 FPS roughly
@@ -201,7 +228,8 @@ async def get_tactical_swarm_status():
         "broadcast_active": True if (tactical_swarm_enabled and shared_broadcast_frame) else False,
         "mode": "synchronized" if tactical_swarm_enabled else "independent",
         "independent_feeds": not tactical_swarm_enabled,
-        "description": "Each drone has independent camera" if not tactical_swarm_enabled else "All drones display broadcast"
+        "description": "Each drone has independent camera" if not tactical_swarm_enabled else "All drones display broadcast",
+        "drone_ids_with_frames": list(drone_frames.keys())
     }
 
 @router.post("/slam/{drone_id}/telemetry")

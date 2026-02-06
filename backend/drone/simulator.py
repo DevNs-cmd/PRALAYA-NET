@@ -26,9 +26,8 @@ class DroneFeedSimulator:
         self.registered_drone_ids = []
 
     def _drone_ids(self):
-        # Prefer registered backend drone ids if available
-        if self.registered_drone_ids:
-            return self.registered_drone_ids
+        # Use simple drone names - don't rely on registered IDs
+        # Frontend expects drone_1, drone_2, etc.
         return [f"drone_{i+1}" for i in range(self.num_drones)]
 
     def register_drones_with_backend(self):
@@ -77,8 +76,10 @@ class DroneFeedSimulator:
         try:
             # Send as multipart/form-data so FastAPI's File(...) parameter parses it correctly
             files = {"file": ("frame.jpg", frame_bytes, "image/jpeg")}
-            self.session.post(url, files=files, timeout=1.5)
-        except Exception:
+            r = self.session.post(url, files=files, timeout=1.5)
+            if r.status_code != 200:
+                print(f"[Simulator] WARNING: Frame POST to {drone_id} got {r.status_code}")
+        except Exception as e:
             # best-effort; ignore failures so simulator stays alive
             pass
 
@@ -97,11 +98,8 @@ class DroneFeedSimulator:
             pass
 
     def run(self):
-        # Attempt to register virtual drones so frontend lists them
-        try:
-            self.register_drones_with_backend()
-        except Exception:
-            pass
+        # Simulator uses simple drone IDs (drone_1, drone_2, etc.)
+        # No need to register with backend - frontend knows these IDs
 
         # Try multiple camera indices to be more robust on different systems
         cap = None
