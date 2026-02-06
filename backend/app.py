@@ -83,6 +83,16 @@ async def startup_event():
         print("✅ RECON DRONE [drone_1]: DEPLOYED AT COMMAND CENTER")
     except Exception as e:
         print(f"⚠️ Drone initialization failed: {e}")
+    # Optionally start the local webcam-based drone feed simulator
+    start_sim = os.getenv("START_DRONE_SIMULATOR", "true").lower() in ("1", "true", "yes")
+    if os.getenv("DEMO_MODE", "false").lower() == "true" or start_sim:
+        try:
+            from drone.simulator import start_simulator_in_thread
+            backend_url = os.getenv("BACKEND_URL") or f"http://127.0.0.1:{CONFIG_PORT or 8000}"
+            start_simulator_in_thread(backend_url=backend_url, num_drones=int(os.getenv("SIMULATED_DRONES", 12)), fps=int(os.getenv("SIMULATOR_FPS", 6)))
+            print("✅ Drone Feed Simulator started (webcam -> virtual drones)")
+        except Exception as e:
+            print(f"⚠️ Failed to start Drone Feed Simulator: {e}")
     print("\n✨ BACKEND READY: PRALAYA-NET OPERATIONAL")
     print("═"*70 + "\n")
 
