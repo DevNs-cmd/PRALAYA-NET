@@ -80,9 +80,9 @@ class InputValidationMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
             return response
         
-        # Skip validation for multipart/form-data (file uploads)
+        # Skip validation for multipart/form-data (file uploads) and other binary content
         content_type = request.headers.get("content-type", "").lower()
-        if "multipart/form-data" in content_type:
+        if "multipart/form-data" in content_type or "application/octet-stream" in content_type:
             response = await call_next(request)
             return response
         
@@ -91,7 +91,13 @@ class InputValidationMiddleware(BaseHTTPMiddleware):
             body = await request.body()
             
             if body:
-                data = json.loads(body)
+                # Try to parse as JSON - if it fails, it's not a JSON request
+                try:
+                    data = json.loads(body)
+                except json.JSONDecodeError:
+                    # Not JSON, skip validation
+                    response = await call_next(request)
+                    return response
                 
                 # Validate disaster injection endpoints
                 if "/trigger" in request.url.path or "/inject" in request.url.path:
@@ -101,11 +107,6 @@ class InputValidationMiddleware(BaseHTTPMiddleware):
                 if "location" in data:
                     self._validate_location(data["location"])
             
-        except json.JSONDecodeError:
-            return JSONResponse(
-                status_code=400,
-                content={"error": "Invalid JSON in request body"}
-            )
         except ValueError as e:
             return JSONResponse(
                 status_code=400,

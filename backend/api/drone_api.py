@@ -103,25 +103,48 @@ async def upload_slam_frame(drone_id: str, request: Request):
     """
     global shared_broadcast_frame
     try:
-        # Parse multipart form data
-        form = await request.form()
-        file = form.get("file")
+        print(f"[DEBUG] Receiving frame upload for {drone_id}")
+        print(f"[DEBUG] Content-Type: {request.headers.get('content-type')}")
         
+        # Try to get raw body first to see if that works
+        try:
+            raw_body = await request.body()
+            print(f"[DEBUG] Raw body size: {len(raw_body)} bytes")
+            print(f"[DEBUG] Raw body first 50 bytes: {raw_body[:50]}")
+        except Exception as e:
+            print(f"[DEBUG] Error reading raw body: {e}")
+        
+        # Parse multipart form data
+        print(f"[DEBUG] About to parse form data...")
+        form = await request.form()
+        print(f"[DEBUG] Form parsed, keys: {list(form.keys())}")
+        
+        file = form.get("file")
         if not file:
+            print(f"[DEBUG] No 'file' field found in form")
             raise HTTPException(status_code=400, detail="Missing 'file' field in form data")
+        
+        print(f"[DEBUG] File field found: {type(file)}")
+        print(f"[DEBUG] File filename: {getattr(file, 'filename', 'unknown')}")
+        print(f"[DEBUG] File content_type: {getattr(file, 'content_type', 'unknown')}")
         
         # Read the file content
         content = await file.read()
+        print(f"[DEBUG] Content read, size: {len(content)} bytes")
+        print(f"[DEBUG] Content first 50 bytes: {content[:50]}")
         
         if not content:
+            print(f"[DEBUG] Empty file content")
             raise HTTPException(status_code=400, detail="Empty file")
         
         # Store frame
         drone_frames[drone_id] = content
+        print(f"[DEBUG] Frame stored for {drone_id}")
         
         # In tactical swarm mode, all drones share the broadcast frame
         if tactical_swarm_enabled:
             shared_broadcast_frame = content
+            print(f"[DEBUG] Broadcast frame updated")
         
         # Log frame storage for debugging
         print(f"[Frame] Stored for {drone_id}: {len(content)} bytes")
@@ -131,6 +154,9 @@ async def upload_slam_frame(drone_id: str, request: Request):
         raise
     except Exception as e:
         print(f"[Frame] ERROR storing frame for {drone_id}: {str(e)}")
+        print(f"[Frame] ERROR type: {type(e)}")
+        import traceback
+        print(f"[Frame] Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=400, detail=f"Frame upload failed: {str(e)}")
 
 @router.get("/slam/{drone_id}/live")

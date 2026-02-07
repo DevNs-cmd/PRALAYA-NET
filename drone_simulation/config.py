@@ -17,7 +17,7 @@ load_dotenv(env_path)
 
 # Backend host and port - supports environment override
 BACKEND_HOST = os.getenv("BACKEND_HOST", "127.0.0.1")
-BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8001"))  # Default to 8001 (our running port)
+BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8000"))  # Default to 8000 (our running port)
 BACKEND_URL = f"http://{BACKEND_HOST}:{BACKEND_PORT}"
 
 # ==========================================
