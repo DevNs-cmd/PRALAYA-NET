@@ -17,7 +17,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     Limits requests per IP address
     """
     
-    def __init__(self, app, requests_per_minute: int = 60):
+    def __init__(self, app, requests_per_minute: int = 600):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
         self.request_times = defaultdict(list)
