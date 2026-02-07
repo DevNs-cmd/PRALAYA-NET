@@ -80,8 +80,14 @@ class InputValidationMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
             return response
         
+        # Skip validation for multipart/form-data (file uploads)
+        content_type = request.headers.get("content-type", "").lower()
+        if "multipart/form-data" in content_type:
+            response = await call_next(request)
+            return response
+        
         try:
-            # Get body for validation
+            # Get body for validation (only for JSON)
             body = await request.body()
             
             if body:

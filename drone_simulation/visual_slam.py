@@ -12,8 +12,17 @@ import queue
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from multi_drone_camera import multi_drone_camera, DroneCamera
-
-BACKEND_URL = "http://127.0.0.1:8000"
+from config import (
+    BACKEND_URL, 
+    FRAME_ENCODING_FORMAT, 
+    FRAME_JPEG_QUALITY,
+    FRAME_UPLOAD_FPS,
+    FRAME_UPLOAD_TIMEOUT,
+    TELEMETRY_UPLOAD_TIMEOUT,
+    LOG_FRAME_ERRORS,
+    LOG_FRAME_SUCCESS,
+    LOG_TELEMETRY_ERRORS
+)
 
 # Ensure directories exist
 os.makedirs("data/recordings", exist_ok=True)
@@ -178,37 +187,85 @@ class DroneAgent(threading.Thread):
             return frame
 
     def sync_backend(self, frame, mode="OWN_CAMERA"):
+        """
+        Sync frame and telemetry to backend using corrected multipart/form-data format
+        
+        FIXED: Uses multipart/form-data instead of raw binary
+        FIXED: Proper error logging instead of silent failures
+        """
         now = time.time()
-        if now - self.last_sync_time < 0.1:  # 10 FPS sync
+        if now - self.last_sync_time < (1.0 / FRAME_UPLOAD_FPS):
             return
 
         try:
-            # Upload Frame with mode indicator
-            _, img_encoded = cv2.imencode('.jpg', frame)
-            self.session.post(
-                f"{BACKEND_URL}/api/drones/slam/{self.drone_id}/frame", 
-                data=img_encoded.tobytes(),
-                timeout=2.0,
-                headers={"Content-Type": "application/octet-stream"}
+            # === FRAME UPLOAD (FIXED FORMAT) ===
+            # Encode frame as JPEG bytes
+            success, img_encoded = cv2.imencode(FRAME_ENCODING_FORMAT, frame, 
+                                               [cv2.IMWRITE_JPEG_QUALITY, FRAME_JPEG_QUALITY])
+            
+            if not success:
+                if LOG_FRAME_ERRORS:
+                    print(f"❌ {self.drone_id}: Frame encoding failed")
+                return
+            
+            frame_bytes = img_encoded.tobytes()
+            
+            # FIXED: Use multipart/form-data instead of application/octet-stream
+            # This matches what backend API expects: form.get("file")
+            files = {
+                "file": (f"frame_{self.drone_id}.jpg", frame_bytes, "image/jpeg")
+            }
+            
+            response = self.session.post(
+                f"{BACKEND_URL}/api/drones/slam/{self.drone_id}/frame",
+                files=files,
+                timeout=FRAME_UPLOAD_TIMEOUT
             )
             
-            # Upload Telemetry
+            if response.status_code == 200:
+                if LOG_FRAME_SUCCESS:
+                    print(f"✅ {self.drone_id}: Frame uploaded ({len(frame_bytes)} bytes)")
+            else:
+                if LOG_FRAME_ERRORS:
+                    print(f"❌ {self.drone_id}: Frame upload failed with {response.status_code}")
+                    try:
+                        error_detail = response.json().get("detail", "Unknown error")
+                        print(f"   Error: {error_detail}")
+                    except:
+                        print(f"   Response: {response.text[:100]}")
+            
+            # === TELEMETRY UPLOAD ===
             payload = {
                 "keypoints": len(self.map_points) * 10,
                 "keyframes": len(self.keyframes),
                 "status": "localized",
                 "gps_status": "active" if self.gps_active else "lost",
                 "tactical_swarm": self.use_broadcast,
-                "camera_mode": mode
+                "camera_mode": mode,
+                "timestamp": datetime.now().isoformat()
             }
-            self.session.post(
-                f"{BACKEND_URL}/api/drones/slam/{self.drone_id}/telemetry", 
-                json=payload, 
-                timeout=2.0
+            
+            response = self.session.post(
+                f"{BACKEND_URL}/api/drones/slam/{self.drone_id}/telemetry",
+                json=payload,
+                timeout=TELEMETRY_UPLOAD_TIMEOUT
             )
+            
+            if response.status_code != 200:
+                if LOG_TELEMETRY_ERRORS:
+                    print(f"⚠️  {self.drone_id}: Telemetry upload failed with {response.status_code}")
+            
             self.last_sync_time = now
+            
+        except requests.exceptions.Timeout:
+            if LOG_FRAME_ERRORS:
+                print(f"⏱️  {self.drone_id}: Frame upload timeout")
+        except requests.exceptions.ConnectionError as e:
+            if LOG_FRAME_ERRORS:
+                print(f"🔌 {self.drone_id}: Connection error - {str(e)[:50]}")
         except Exception as e:
-            pass
+            if LOG_FRAME_ERRORS:
+                print(f"❌ {self.drone_id}: Unexpected error in sync_backend: {str(e)[:100]}")
 
 class DroneSwarmManager:
     def __init__(self):
@@ -222,25 +279,45 @@ class DroneSwarmManager:
         multi_drone_camera.initialize_drone_cameras(drone_ids)
     
     def broadcast_frame_to_backend(self, frame):
-        """Broadcast frame to all drones via backend"""
+        """Broadcast frame to all drones via backend with FIXED format"""
         session = create_session()
         try:
-            _, img_encoded = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+            # Encode with proper JPEG quality
+            success, img_encoded = cv2.imencode(
+                FRAME_ENCODING_FORMAT, 
+                frame, 
+                [cv2.IMWRITE_JPEG_QUALITY, FRAME_JPEG_QUALITY]
+            )
+            
+            if not success:
+                print("❌ Failed to encode broadcast frame")
+                return
+            
             frame_data = img_encoded.tobytes()
             
+            # FIXED: Use multipart/form-data
+            files = {
+                "file": (f"broadcast_frame.jpg", frame_data, "image/jpeg")
+            }
+            
             # Send to all active drones
+            success_count = 0
             for drone in self.drones:
                 try:
-                    session.post(
+                    response = session.post(
                         f"{BACKEND_URL}/api/drones/slam/{drone.drone_id}/frame",
-                        data=frame_data,
-                        timeout=0.5,
-                        headers={"Content-Type": "application/octet-stream"}
+                        files=files,
+                        timeout=0.5
                     )
+                    if response.status_code == 200:
+                        success_count += 1
                 except Exception:
                     pass
-        except Exception:
-            pass
+            
+            if success_count > 0:
+                print(f"📡 Broadcast frame sent to {success_count}/{len(self.drones)} drones")
+        except Exception as e:
+            print(f"❌ Broadcast failed: {str(e)[:50]}")
 
     def enable_tactical_swarm(self):
         """Enable tactical swarm mode - all drones show broadcast"""
