@@ -1,35 +1,20 @@
-# PRALAYA-NET Backend - Render Deployment Configuration
-# Python 3.12 - Optimized for stability and compatibility
-
 services:
-  # Production Web Service
   - type: web
-    name: PRALAYA-NET-Backend
-    env: python
-    pythonVersion: "3.12"
-    buildCommand: |
-      # CRITICAL: Upgrade build tools FIRST to fix setuptools.build_meta error
-      pip install --upgrade pip setuptools wheel
-      # Install dependencies
-      pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    name: pralaya-backend
+    runtime: python312
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
     envVars:
-      - key: NASA_API_KEY
-        value: ""
-      - key: DATA_GOV_KEY
-        value: ""
-      - key: OPENWEATHER_API_KEY
-        value: ""
       - key: PORT
-        value: 8000
+        value: "8000"
       - key: DEMO_MODE
         value: "true"
-      - key: PYTHONUNBUFFERED
-        value: "1"
-      - key: PYTHONHASHSEED
-        value: "0"
-    plan: starter
-    region: oregon
-    healthCheckPath: /health
-    autoDeploy: true
+      - key: DATA_GOV_KEY
+        value: "your_data_gov_key_here"
+      - key: NASA_API_KEY
+        value: "your_nasa_api_key_here"
+      - key: OPENWEATHER_API_KEY
+        value: "your_openweather_api_key_here"
+    healthCheckPath: /api/health
+    plan: free
 

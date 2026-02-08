@@ -15,6 +15,7 @@ from services.ws_manager import ws_manager
 
 from api.trigger_api import router as trigger_router
 from api.drone_api import router as drone_router
+from api.drone_fleet_api import router as drone_fleet_router
 from api.satellite_api import router as satellite_router
 from api.alerts_api import router as alerts_router
 from api.risk_alert_api import router as risk_alert_router
@@ -183,6 +184,7 @@ async def startup_event():
 # Include routers
 app.include_router(trigger_router, prefix="/api/trigger", tags=["Trigger"])
 app.include_router(drone_router, prefix="/api/drones", tags=["Drones"])
+app.include_router(drone_fleet_router, tags=["Drone Fleet"])
 app.include_router(satellite_router, prefix="/api/satellite", tags=["Satellite"])
 app.include_router(alerts_router, prefix="/api/orchestration/alerts", tags=["Alerts"])
 app.include_router(risk_alert_router, tags=["Risk Alert"])

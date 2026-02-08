@@ -1,55 +1,52 @@
-# PRALAYA-NET Frontend Netlify Configuration
-
 [build]
-  # Build command
   command = "npm run build"
-  
-  # Build directory
   publish = "dist"
-  
-  # Base directory
-  base = "/dashboard"
-  
-  # Node.js version
-  node_version = "18"
+  environment = { NODE_VERSION = "18" }
 
 [build.environment]
-  # Production API URL - Update this to your deployed backend URL
-  NEXT_PUBLIC_API_URL = "https://your-backend.onrender.com"
-  VITE_API_URL = "https://your-backend.onrender.com"
-  VITE_WS_URL = "wss://your-backend.onrender.com"
-
-  # Build mode
-  VITE_DEV_MODE = "false"
-  VITE_DEBUG = "false"
+  NODE_OPTIONS = "--max-old-space-size=4096"
 
 [[redirects]]
-  # Single page application redirect
+  from = "/api/*"
+  to = "http://127.0.0.1:8000/api/:splat"
+  status = 200
+  conditions = {Role = ["production"]}
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
 [[headers]]
-  # Cache control headers
   for = "/*"
   [headers.values]
-    X-Frame-Options = "DENY"
+    X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
 
 [[headers]]
-  # Static assets - longer cache
-  for = "/assets/*"
+  for = "/*.js"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "public, max-age=31536000"
 
-[context.production]
-  # Production-specific settings
-  command = "npm run build"
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
 
-[context.development]
-  # Development environment
+[[headers]]
+  for = "/*.ico"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[functions]
+  node_bundler = "esbuild"
+  directory = "netlify/functions"
+
+[dev]
   command = "npm run dev"
-  [build.environment]
-    VITE_DEV_MODE = "true"
+  port = 5173
+  targetPort = 5173
+  autoLaunch = false
 

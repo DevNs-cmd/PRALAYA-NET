@@ -1,6 +1,7 @@
 /**
  * API Service for PRALAYA-NET Frontend
  * Robust backend communication with auto-reconnect and error handling
+ * Enhanced with drone fleet operations
  */
 
 import { API_BASE, WS_URL } from '../config/api'
@@ -165,6 +166,241 @@ export async function fetchStabilityIndex() {
     return await response.json()
   } catch (error) {
     console.error('[API] Stability index error:', error)
+    throw error
+  }
+}
+
+// ============== Drone Fleet API ==============
+
+/**
+ * Get complete drone fleet status
+ */
+export async function getDroneStatus() {
+  try {
+    const response = await fetch(`${API_BASE}/api/drones/fleet-status`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    
+    if (!response.ok) {
+      throw new Error(`Drone fleet status API failed: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('[API] Drone status error:', error)
+    throw error
+  }
+}
+
+/**
+ * Get safe drone count for deployment based on weather/risk
+ */
+export async function getSafeDroneCount(lat, lon, riskScore, apiKey = null) {
+  try {
+    const url = new URL(`${API_BASE}/api/drones/safe-count`)
+    url.searchParams.append('lat', lat.toString())
+    url.searchParams.append('lon', lon.toString())
+    url.searchParams.append('risk_score', riskScore.toString())
+    if (apiKey) {
+      url.searchParams.append('openweather_key', apiKey)
+    }
+    
+    console.log('[API] Fetching safe drone count for:', lat, lon)
+    
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    
+    if (!response.ok) {
+      throw new Error(`Safe drone count API failed: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    console.log('[API] Safe drone count:', data.safe_drone_count)
+    return data
+  } catch (error) {
+    console.error('[API] Safe drone count error:', error)
+    throw error
+  }
+}
+
+/**
+ * Get comprehensive drone operations conditions
+ */
+export async function getDroneConditions(lat, lon) {
+  try {
+    const url = `${API_BASE}/api/drones/conditions/${lat}/${lon}`
+    console.log('[API] Fetching drone conditions for:', lat, lon)
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    
+    if (!response.ok) {
+      throw new Error(`Drone conditions API failed: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error('[API] Drone conditions error:', error)
+    throw error
+  }
+}
+
+/**
+ * Get drone position estimate (GPS fallback)
+ */
+export async function estimateDronePosition(lat, lon, weatherData = null) {
+  try {
+    const url = `${API_BASE}/api/drones/position-estimate`
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        lat,
+        lon,
+        weather_data: weatherData || {}
+      })
+    })
+    
+    if (!response.ok) {
+      throw new Error(`Position estimate API failed: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('[API] Position estimate error:', error)
+    throw error
+  }
+}
+
+/**
+ * Generate prediction with confidence scoring
+ */
+export async function generatePrediction(lat, lon, weather, historicalData = null) {
+  try {
+    const url = `${API_BASE}/api/drones/prediction`
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        lat,
+        lon,
+        weather,
+        historical_data: historicalData || {}
+      })
+    })
+    
+    if (!response.ok) {
+      throw new Error(`Prediction API failed: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    console.log('[API] Prediction generated with confidence:', data.prediction?.confidence)
+    return data
+  } catch (error) {
+    console.error('[API] Prediction error:', error)
+    throw error
+  }
+}
+
+/**
+ * Deploy a drone to a target location
+ */
+export async function deployDrone(droneId, targetLat, targetLon, missionType = 'surveillance', altitude = 100) {
+  try {
+    const url = `${API_BASE}/api/drones/deploy`
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        drone_id: droneId,
+        target_lat: targetLat,
+        target_lon: targetLon,
+        mission_type: missionType,
+        altitude
+      })
+    })
+    
+    if (!response.ok) {
+      throw new Error(`Deploy drone API failed: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('[API] Deploy drone error:', error)
+    throw error
+  }
+}
+
+/**
+ * Recall a drone to base
+ */
+export async function recallDrone(droneId) {
+  try {
+    const url = `${API_BASE}/api/drones/recall?drone_id=${droneId}`
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    
+    if (!response.ok) {
+      throw new Error(`Recall drone API failed: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('[API] Recall drone error:', error)
+    throw error
+  }
+}
+
+/**
+ * Get specific drone status
+ */
+export async function getSingleDroneStatus(droneId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/drones/${droneId}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    
+    if (!response.ok) {
+      throw new Error(`Drone status API failed: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('[API] Single drone status error:', error)
+    throw error
+  }
+}
+
+/**
+ * Get available drone types
+ */
+export async function getDroneTypes() {
+  try {
+    const response = await fetch(`${API_BASE}/api/drones/types`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    
+    if (!response.ok) {
+      throw new Error(`Drone types API failed: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('[API] Drone types error:', error)
     throw error
   }
 }
