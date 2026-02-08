@@ -8,11 +8,11 @@ services:
     env: python
     pythonVersion: "3.13"  # Python 3.13 for modern features
     buildCommand: |
-      # Upgrade pip, setuptools, and wheel FIRST (critical for Python 3.13)
+      # Upgrade pip, setuptools, and wheel FIRST
       pip install --upgrade pip setuptools wheel
       # Install dependencies
-      pip install -r backend/requirements_simple.txt
-    startCommand: cd backend && python main.py
+      pip install -r requirements_simple.txt
+    startCommand: python main.py
     
     # Environment variables
     envVars:
@@ -36,6 +36,10 @@ services:
     region: oregon
     healthCheckPath: /health
     autoDeploy: true
+
+# Build Configuration (alternative using Dockerfile)
+build:
+  dockerfilePath: ./Dockerfile
 
 # Resource Limits
 resources:

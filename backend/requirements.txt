@@ -1,16 +1,44 @@
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-networkx==3.2.1
-numpy==1.24.3
-torch==2.1.0
-opencv-python==4.8.1.78
-pillow==10.1.0
-pydantic==2.5.0
-python-multipart==0.0.6
-requests==2.31.0
-websockets==12.0
-aiofiles==23.2.1
-python-dotenv==1.0.0
-httpx==0.25.1
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
+# PRALAYA-NET Backend - Full Dependencies
+# Python 3.13 compatible versions
+# Generated with setuptools.build_meta compatibility
+
+# Core Framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+
+# Data Validation
+pydantic>=2.5.3
+
+# HTTP & Async
+httpx>=0.26.0
+aiofiles>=23.2.1
+python-multipart>=0.0.9
+
+# Web & Networking
+websockets>=12.0
+requests>=2.31.0
+python-dotenv>=1.0.1
+
+# Build System (Critical for Python 3.13)
+setuptools>=70.0.0
+wheel>=0.43.0
+pip>=24.0
+
+# Data Science & ML (Python 3.13 compatible versions)
+# Using newer versions that support Python 3.13
+numpy>=1.26.0
+networkx>=3.3
+
+# Note: torch and opencv-python may need platform-specific wheels
+# Uncomment if you need full ML capabilities:
+# torch>=2.2.0
+# opencv-python>=4.9.0
+
+# Optional ML packages (uncomment as needed):
+# pillow>=10.1.0
+# scikit-learn>=1.4.0
+
+# Security
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+

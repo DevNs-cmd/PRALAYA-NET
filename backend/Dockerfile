@@ -25,16 +25,18 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --upgrade pip setuptools wheel
 
 # Copy requirements first (for better caching)
-COPY backend/pyproject.toml backend/requirements_simple.txt ./
+COPY pyproject.toml .
+COPY requirements_simple.txt .
 
 # Install Python dependencies with modern build system
 RUN pip install --no-cache-dir -r requirements_simple.txt
 
 # Copy application code
-COPY backend/ ./backend/
+COPY main.py .
+COPY app.py .
 
 # Create data directories
-RUN mkdir -p backend/data/disaster_history backend/data/predictions
+RUN mkdir -p data/disaster_history data/predictions
 
 # Expose port
 EXPOSE 10000
@@ -44,5 +46,5 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:10000/health')" || exit 1
 
 # Run the application
-CMD ["python", "backend/main.py"]
+CMD ["python", "main.py"]
 

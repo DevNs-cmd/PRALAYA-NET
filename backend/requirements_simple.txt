@@ -1,23 +1,31 @@
 # PRALAYA-NET Backend - Essential Dependencies Only
+# Optimized for Python 3.13 with modern package versions
 # FastAPI and ASGI server
-fastapi>=0.104.0
-uvicorn[standard]>=0.24.0
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
 
 # HTTP client and async support
-httpx>=0.25.0
+httpx>=0.26.0
 aiofiles>=23.2.1
 
 # Environment configuration
-python-dotenv>=1.0.0
+python-dotenv>=1.0.1
 
 # Data validation and serialization
-pydantic>=2.5.0
+pydantic>=2.5.3
 
 # WebSocket support
 websockets>=12.0
 
+# Build system (critical for Python 3.13)
+setuptools>=70.0.0
+wheel>=0.43.0
+pip>=24.0
+
 # Optional: For enhanced features
 # Uncomment if needed:
-# numpy>=1.24.3
-# networkx>=3.2.1
+# numpy>=1.26.0
+# networkx>=3.3
 # requests>=2.31.0
+# pillow>=10.1.0
+
