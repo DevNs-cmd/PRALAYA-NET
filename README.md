@@ -2,6 +2,14 @@
 
 > **An AI-powered autonomous disaster response system with real-time risk assessment, multi-agent coordination, and closed-loop stabilization for national-scale infrastructure protection.**
 
+## 📱 **Latest Updates (Mobile-Optimized)**
+
+✅ **Removed blocking map overlay** - Clean, interactive map interface
+✅ **Fully responsive design** - Works seamlessly on mobile, tablet, and desktop
+✅ **Enhanced interactivity** - Click anywhere on map for real-time geo-intelligence
+✅ **Offline simulation mode** - System functions with mock data when backend is offline
+✅ **Improved UX/UI** - Streamlined interface with intuitive controls
+
 ---
 
 ## 🎯 **Project Overview**
@@ -102,11 +110,14 @@ Unlike conventional systems that only predict disasters, PRALAYA-NET implements 
 ```
 
 ### **Interactive Features**
-- **Live India Map:** Infrastructure nodes with real-time risk visualization
+- **Live India Map:** Interactive geospatial interface with real-time risk visualization
+- **Click-to-Analyze:** Click anywhere on the map to instantly view weather, risk analysis, and drone conditions
+- **Infrastructure Intelligence:** Toggle overlay showing live infrastructure data
+- **Risk Visualization:** Color-coded markers indicating infrastructure risk levels
 - **Drone Surveillance View:** 12-panel camera feed grid (simulated)
-- **Risk Heatmap:** Color-coded infrastructure health overlay
-- **Agent Status Panel:** Live agent coordination tracking
+- **Agent Status Panel:** Live multi-agent coordination tracking
 - **Execution Proof Viewer:** Immutable ledger verification
+- **Responsive Design:** Perfectly optimized for mobile, tablet, and desktop use
 
 ---
 
@@ -369,10 +380,12 @@ After Autonomous Response:
 - **API Docs:** Auto-generated OpenAPI
 
 ### **Frontend**
-- **Framework:** React 18
-- **Maps:** Leaflet.js
+- **Framework:** React 18 with Vite
+- **Maps:** Leaflet.js (fully interactive)
 - **State Management:** React Hooks
-- **Styling:** CSS Modules
+- **Styling:** Responsive CSS with mobile-first design
+- **Real-time:** WebSocket integration
+- **Offline Support:** Graceful degradation with mock data
 
 ### **AI/ML**
 - **Risk Modeling:** Custom algorithms
@@ -411,6 +424,27 @@ PRALAYA-NET/
 ├── README.md
 └── LICENSE
 ```
+
+---
+
+## 📱 **Mobile & Responsive Features**
+
+### **Touch-Optimized Interface**
+- **Pinch-to-Zoom** map navigation on mobile devices
+- **Tap-to-Analyze** instant geo-intelligence on any location
+- **Swipe Gestures** for panel navigation
+- **Collapsible Controls** to maximize map viewing area
+
+### **Cross-Device Compatibility**
+- **Desktop:** Full feature set with expanded panels
+- **Tablet:** Optimized layout with balanced information density
+- **Mobile:** Streamlined interface with essential controls only
+
+### **Performance Optimizations**
+- **Lazy Loading** for map tiles and data
+- **Efficient Rendering** for smooth mobile performance
+- **Adaptive Layouts** that adjust to screen size
+- **Touch-Friendly Controls** with appropriate sizing
 
 ---
 

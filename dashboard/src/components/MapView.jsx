@@ -480,66 +480,34 @@ const MapView = ({ apiUrl = 'http://127.0.0.1:8000' }) => {
         </div>
       )}
 
-      {/* Instructions */}
+      {/* Risk Legend - Moved to top right corner */}
       <div style={{
         position: 'absolute',
-        bottom: '80px',
-        left: '12px',
-        zIndex: 1000,
-        background: 'rgba(26, 29, 41, 0.95)',
-        border: '1px solid #3a3d4a',
-        padding: '14px 18px',
-        borderRadius: '8px',
-        fontSize: '12px',
-        color: '#b4b6ba',
-        maxWidth: '280px',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
-      }}>
-        <div style={{ 
-          fontWeight: '600', 
-          color: '#e8e9ea', 
-          marginBottom: '6px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <span style={{ fontSize: '16px' }}>🖱️</span>
-          <span>Interactive Controls</span>
-        </div>
-        <div style={{ lineHeight: '1.6' }}>
-          <div>• <strong>Click anywhere</strong> on the map to view real-time weather, risk analysis, and safe drone count</div>
-          <div>• Toggle <strong>Infrastructure Intelligence</strong> to see live data overlays</div>
-          <div>• Markers show infrastructure with color-coded risk levels</div>
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div style={{
-        position: 'absolute',
-        bottom: '80px',
+        top: '80px',
         right: '12px',
         zIndex: 1000,
         background: 'rgba(26, 29, 41, 0.95)',
         border: '1px solid #3a3d4a',
-        padding: '14px 18px',
+        padding: '12px 16px',
         borderRadius: '8px',
         fontSize: '11px',
         color: '#b4b6ba',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+        maxWidth: '180px'
       }}>
         <div style={{ 
           fontWeight: '600', 
           color: '#e8e9ea', 
-          marginBottom: '10px',
+          marginBottom: '8px',
           fontSize: '12px'
         }}>
-          Risk Legend
+          📊 Risk Levels
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <LegendItem color="#5a8a5a" label="Low Risk (0-30%)" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          <LegendItem color="#5a8a5a" label="Low (0-30%)" />
           <LegendItem color="#d4be74" label="Moderate (30-50%)" />
           <LegendItem color="#d4a574" label="Elevated (50-70%)" />
-          <LegendItem color="#c45a5a" label="High/Critical (70%+)" />
+          <LegendItem color="#c45a5a" label="Critical (70%+)" />
         </div>
       </div>
 
