@@ -23,6 +23,7 @@ const MapView = ({ apiUrl = 'http://127.0.0.1:8000' }) => {
   const [mapReady, setMapReady] = useState(false)
   const [loading, setLoading] = useState(true)
   const [mode, setMode] = useState('live') // 'live' or 'demo'
+  const [backendReachable, setBackendReachable] = useState(true)
   const mapRef = useRef(null)
 
   // Map click handler
@@ -66,16 +67,19 @@ const MapView = ({ apiUrl = 'http://127.0.0.1:8000' }) => {
   // Fetch infrastructure
   const fetchInfra = async () => {
     try {
-      const data = await fetchInfrastructureLayer(center[0], center[1])
-      setInfrastructure(data)
+      const data = await fetchInfrastructure(center[0], center[1])
+      setInfrastructure(data.facilities || [])
     } catch (error) {
       console.error('[MapView] Error fetching infrastructure:', error)
-      // Use simulated infrastructure
-      setInfrastructure([
-        { id: 'infra_1', name: 'Power Grid Station A', lat: 28.6139, lon: 77.2090, type: 'power', risk: 0.3 },
-        { id: 'infra_2', name: 'City Hospital', lat: 28.7041, lon: 77.1025, type: 'healthcare', risk: 0.5 },
-        { id: 'infra_3', name: 'Water Treatment Plant', lat: 28.5355, lon: 77.3910, type: 'water', risk: 0.2 }
-      ])
+      // Only use simulated data if backend is unreachable
+      if (!backendReachable) {
+        console.warn('[MapView] Backend unreachable, using simulated infrastructure data')
+        setInfrastructure([
+          { id: 'infra_1', name: 'Power Grid Station A', lat: 28.6139, lon: 77.2090, type: 'power', risk: 0.3 },
+          { id: 'infra_2', name: 'City Hospital', lat: 28.7041, lon: 77.1025, type: 'healthcare', risk: 0.5 },
+          { id: 'infra_3', name: 'Water Treatment Plant', lat: 28.5355, lon: 77.3910, type: 'water', risk: 0.2 }
+        ])
+      }
     }
   }
 
@@ -178,7 +182,7 @@ const MapView = ({ apiUrl = 'http://127.0.0.1:8000' }) => {
           gap: '12px',
           pointerEvents: 'auto'
         }}>
-          {/* Mode Toggle */}
+      {/* Backend Status */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -192,11 +196,15 @@ const MapView = ({ apiUrl = 'http://127.0.0.1:8000' }) => {
               width: '10px',
               height: '10px',
               borderRadius: '50%',
-              background: '#5a8a5a',
-              animation: 'pulse 2s infinite'
+              background: backendReachable ? '#5a8a5a' : '#c45a5a',
+              animation: backendReachable ? 'pulse 2s infinite' : 'none'
             }}></span>
-            <span style={{ fontSize: '12px', fontWeight: '600', color: '#5a8a5a' }}>
-              LIVE
+            <span style={{
+              fontSize: '12px',
+              fontWeight: '600',
+              color: backendReachable ? '#5a8a5a' : '#c45a5a'
+            }}>
+              {backendReachable ? 'LIVE' : 'BACKEND OFFLINE'}
             </span>
           </div>
         </div>

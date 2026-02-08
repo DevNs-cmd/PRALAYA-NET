@@ -3,6 +3,11 @@
  * Uses process.env.REACT_APP_API_URL with fallback to demo mode
  */
 
+// Browser compatibility shim for process
+if (typeof process === 'undefined') {
+    window.process = { env: {} };
+}
+
 // Get API URL from environment with multiple fallbacks
 const API_URL = process.env.REACT_APP_API_URL || 
                  import.meta.env.VITE_API_URL || 

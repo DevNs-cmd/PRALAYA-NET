@@ -73,6 +73,7 @@ NASA_FIRMS_URL = "https://firms.modaps.eosdis.nasa.gov/api/area/csv"
 NASA_POWER_URL = "https://power.larc.nasa.gov/api/temporal/hourly/point"
 USGS_EARTHQUAKE_URL = "https://earthquake.usgs.gov/fdsnws/event/1/query"
 OPENWEATHER_URL = "https://api.openweathermap.org/data/2.5/weather"
+OPENWEATHER_ALERTS_URL = "https://api.openweathermap.org/data/3.0/onecall"
 
 # Ingestion Settings
 INGESTION_INTERVAL_SEC = 300  # 5 minutes
