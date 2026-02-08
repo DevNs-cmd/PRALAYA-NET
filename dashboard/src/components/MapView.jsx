@@ -21,7 +21,7 @@ const MapView = ({ apiUrl = 'http://127.0.0.1:8000' }) => {
   const [showIntelLayer, setShowIntelLayer] = useState(false)
   const [intelMarkers, setIntelMarkers] = useState([])
   const [mapReady, setMapReady] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [mode, setMode] = useState('live') // 'live' or 'demo'
   const [backendReachable, setBackendReachable] = useState(true)
   const mapRef = useRef(null)
@@ -103,9 +103,12 @@ const MapView = ({ apiUrl = 'http://127.0.0.1:8000' }) => {
   // Initial data fetch
   useEffect(() => {
     const loadData = async () => {
-      setLoading(true)
-      await Promise.all([fetchZones(), fetchInfra()])
-      setLoading(false)
+      // Only show loading for initial fetch
+      if (zones.length === 0 && infrastructure.length === 0) {
+        setLoading(true)
+        await Promise.all([fetchZones(), fetchInfra()])
+        setLoading(false)
+      }
     }
     
     loadData()
@@ -117,7 +120,7 @@ const MapView = ({ apiUrl = 'http://127.0.0.1:8000' }) => {
     }, 30000)
     
     return () => clearInterval(interval)
-  }, [center, showIntelLayer])
+  }, [center, showIntelLayer, zones.length, infrastructure.length])
 
   // Fetch intel when toggle changes
   useEffect(() => {
@@ -210,24 +213,23 @@ const MapView = ({ apiUrl = 'http://127.0.0.1:8000' }) => {
         </div>
       </div>
 
-      {/* Intel Toggle */}
+      {/* Intel Toggle - Minimal Version */}
       <div className="infrastructure-toggle" style={{
         position: 'absolute',
         top: '80px',
         left: '12px',
         zIndex: 999,
-        background: 'rgba(26, 29, 41, 0.8)',
-        backdropFilter: 'blur(10px)',
-        borderRadius: '12px',
-        padding: '12px 16px',
-        border: '1px solid rgba(74, 144, 226, 0.2)',
+        background: 'rgba(26, 29, 41, 0.6)',
+        borderRadius: '8px',
+        padding: '8px 12px',
+        border: '1px solid rgba(74, 144, 226, 0.3)',
         pointerEvents: 'auto',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)'
       }}>
         <label className="toggle-label" style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '10px',
+          gap: '8px',
           cursor: 'pointer'
         }}>
           <input
@@ -235,29 +237,19 @@ const MapView = ({ apiUrl = 'http://127.0.0.1:8000' }) => {
             checked={showIntelLayer}
             onChange={(e) => setShowIntelLayer(e.target.checked)}
             style={{
-              width: '18px',
-              height: '18px',
+              width: '16px',
+              height: '16px',
               cursor: 'pointer',
               accentColor: '#4a90e2'
             }}
           />
-          <div>
-            <span style={{
-              fontSize: '13px',
-              fontWeight: '600',
-              color: '#e8e9ea',
-              display: 'block',
-              textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)'
-            }}>
-              Infrastructure Intelligence
-            </span>
-            <span style={{
-              fontSize: '10px',
-              color: '#8a8d94'
-            }}>
-              Weather, Risk & Drone Conditions
-            </span>
-          </div>
+          <span style={{
+            fontSize: '12px',
+            fontWeight: '500',
+            color: '#e8e9ea'
+          }}>
+            Intel Layer
+          </span>
         </label>
       </div>
 
@@ -440,43 +432,36 @@ const MapView = ({ apiUrl = 'http://127.0.0.1:8000' }) => {
         </Marker>
       </MapContainer>
 
-      {/* Loading Overlay */}
+      {/* Loading Indicator - Minimal */}
       {loading && (
         <div style={{
           position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(26, 29, 41, 0.95)',
+          top: '12px',
+          right: '12px',
+          zIndex: 1000,
+          background: 'rgba(26, 29, 41, 0.8)',
+          borderRadius: '20px',
+          padding: '8px 16px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          flexDirection: 'column',
-          gap: '16px'
+          gap: '8px',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
         }}>
           <div style={{
-            width: '50px',
-            height: '50px',
-            border: '4px solid rgba(74, 144, 226, 0.2)',
+            width: '16px',
+            height: '16px',
+            border: '2px solid rgba(74, 144, 226, 0.3)',
             borderTopColor: '#4a90e2',
             borderRadius: '50%',
             animation: 'spin 1s linear infinite'
           }}></div>
-          <div style={{ 
+          <span style={{ 
             color: '#e8e9ea', 
-            fontSize: '16px',
-            fontWeight: '600'
+            fontSize: '12px',
+            fontWeight: '500'
           }}>
-            Loading Geospatial Data...
-          </div>
-          <div style={{ 
-            color: '#8a8d94', 
-            fontSize: '12px' 
-          }}>
-            Fetching satellite imagery and infrastructure data
-          </div>
+            Loading...
+          </span>
         </div>
       )}
 
